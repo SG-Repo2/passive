@@ -87,9 +87,9 @@ export function buildAuditReportHtml(report: AuditReport, contactEmail: string):
     .map(
       (item) => `
         <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-weight:600;">${escapeHtml(item.label)}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">${item.detected ? "Detected" : "Not detected"}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(item.details)}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;font-weight:600;">${escapeHtml(item.label)}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;">${item.detected ? "Detected" : "Not detected"}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;">${escapeHtml(item.details)}</td>
         </tr>`,
     )
     .join("");
@@ -98,9 +98,9 @@ export function buildAuditReportHtml(report: AuditReport, contactEmail: string):
     .map(
       (item) => `
         <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-weight:600;">${escapeHtml(item.label)}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">${item.passed ? "Pass" : "Needs attention"}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(item.details)}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;font-weight:600;">${escapeHtml(item.label)}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;">${item.passed ? "Pass" : "Needs attention"}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;">${escapeHtml(item.details)}</td>
         </tr>`,
     )
     .join("");
@@ -108,9 +108,10 @@ export function buildAuditReportHtml(report: AuditReport, contactEmail: string):
   const mailtoHref = `mailto:${encodeURIComponent(contactEmail)}?subject=${encodeURIComponent("Website audit follow-up")}`;
 
   return `
-    <div style="margin:0;padding:32px;background:#f8fafc;font-family:Arial,sans-serif;color:#0f172a;">
-      <div style="max-width:720px;margin:0 auto;background:#ffffff;border-radius:20px;border:1px solid #e5e7eb;overflow:hidden;">
-        <div style="padding:28px 32px;background:linear-gradient(135deg,#0f5f8f 0%,#153046 100%);color:#ffffff;">
+    <div style="margin:0;padding:32px;background:#f5f9fc;font-family:Arial,sans-serif;color:#10263b;">
+      <div style="max-width:720px;margin:0 auto;background:#ffffff;border-radius:20px;border:1px solid #d6e1ea;overflow:hidden;">
+        <div style="height:6px;background:#d6424c;"></div>
+        <div style="padding:28px 32px;background:linear-gradient(135deg,#41a4dc 0%,#10263b 100%);color:#ffffff;">
           <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;">chiwebdev.com</p>
           <h1 style="margin:0;font-size:28px;line-height:1.15;">Your Website Audit Is Ready</h1>
           <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.82);">
@@ -119,33 +120,33 @@ export function buildAuditReportHtml(report: AuditReport, contactEmail: string):
         </div>
 
         <div style="padding:32px;">
-          <h2 style="margin:0 0 10px;font-size:20px;">Quick summary</h2>
-          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#334155;">${escapeHtml(report.summary)}</p>
+          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Quick summary</h2>
+          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#425466;">${escapeHtml(report.summary)}</p>
 
-          <h2 style="margin:0 0 10px;font-size:20px;">Plain-English explanation</h2>
-          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#334155;">${escapeHtml(report.enhancement.simpleExplanation)}</p>
+          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Plain-English explanation</h2>
+          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#425466;">${escapeHtml(report.enhancement.simpleExplanation)}</p>
 
-          <h2 style="margin:0 0 10px;font-size:20px;">Recommended fixes</h2>
-          <ol style="margin:0 0 24px;padding-left:20px;font-size:15px;line-height:1.7;color:#334155;">
+          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Recommended fixes</h2>
+          <ol style="margin:0 0 24px;padding-left:20px;font-size:15px;line-height:1.7;color:#425466;">
             ${actionItems}
           </ol>
 
-          <h2 style="margin:0 0 10px;font-size:20px;">Business impact</h2>
-          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#334155;">${escapeHtml(report.enhancement.businessImpact)}</p>
+          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Business impact</h2>
+          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#425466;">${escapeHtml(report.enhancement.businessImpact)}</p>
 
-          <h2 style="margin:0 0 10px;font-size:20px;">Tracking checks</h2>
-          <table style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:14px;color:#334155;">
+          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Tracking checks</h2>
+          <table style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:14px;color:#425466;">
             <tbody>${trackingRows}</tbody>
           </table>
 
-          <h2 style="margin:0 0 10px;font-size:20px;">SEO checks</h2>
-          <table style="width:100%;border-collapse:collapse;margin:0 0 32px;font-size:14px;color:#334155;">
+          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">SEO checks</h2>
+          <table style="width:100%;border-collapse:collapse;margin:0 0 32px;font-size:14px;color:#425466;">
             <tbody>${seoRows}</tbody>
           </table>
 
           <a
             href="${mailtoHref}"
-            style="display:inline-block;padding:14px 22px;border-radius:999px;background:#d6a545;color:#132033;font-size:14px;font-weight:700;text-decoration:none;"
+            style="display:inline-block;padding:14px 22px;border-radius:999px;background:#1e7fb6;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;"
           >
             Want this fixed for you?
           </a>

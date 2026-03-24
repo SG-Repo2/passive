@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Free Website Audit for Chicago Businesses | chiwebdev.com",
+  title: "Free Website Audit for Chicago Small Businesses | chiwebdev.com",
   description:
-    "Fast website audits for Chicago businesses. Check tracking, SEO basics, and get a plain-English action plan emailed to you.",
+    "Check tracking, title tags, and meta descriptions, then get a plain-English website audit emailed to you.",
 };
 
 export default function RootLayout({

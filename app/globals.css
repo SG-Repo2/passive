@@ -2,23 +2,26 @@
 
 @theme inline {
   --font-sans: "Avenir Next", "Segoe UI", sans-serif;
-  --font-heading: "Arial Narrow", "Avenir Next Condensed", "Trebuchet MS", sans-serif;
+  --font-heading: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
 }
 
 :root {
-  --background: #f6f1e7;
-  --surface: rgba(255, 255, 255, 0.78);
-  --surface-strong: rgba(255, 255, 255, 0.92);
-  --ink: #132033;
-  --muted: #5f6c80;
-  --accent: #0f5f8f;
-  --accent-strong: #0b4d74;
-  --accent-soft: rgba(15, 95, 143, 0.12);
-  --gold: #d6a545;
-  --gold-soft: rgba(214, 165, 69, 0.16);
-  --success: #1d6b4a;
-  --danger: #a2452e;
-  --line: rgba(19, 32, 51, 0.1);
+  --background: #f5f9fc;
+  --background-muted: #eaf2f8;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-strong: #ffffff;
+  --surface-muted: #f7fafc;
+  --ink: #10263b;
+  --ink-strong: #081828;
+  --muted: #526273;
+  --accent: #41a4dc;
+  --accent-strong: #1e7fb6;
+  --accent-soft: rgba(65, 164, 220, 0.14);
+  --accent-red: #d6424c;
+  --accent-red-soft: rgba(214, 66, 76, 0.1);
+  --success: #0f6b53;
+  --line: rgba(16, 38, 59, 0.12);
+  --shadow: rgba(8, 24, 40, 0.14);
 }
 
 * {
@@ -32,11 +35,13 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(214, 165, 69, 0.24), transparent 26%),
-    radial-gradient(circle at 85% 15%, rgba(15, 95, 143, 0.18), transparent 24%),
-    linear-gradient(180deg, #f9f4ec 0%, #eef3f7 100%);
+    radial-gradient(circle at top left, rgba(65, 164, 220, 0.16), transparent 28%),
+    radial-gradient(circle at 88% 10%, rgba(214, 66, 76, 0.1), transparent 18%),
+    linear-gradient(180deg, #fbfdff 0%, var(--background) 52%, #eef5fa 100%);
   color: var(--ink);
   font-family: var(--font-sans), sans-serif;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -44,6 +49,19 @@ a {
   text-decoration: none;
 }
 
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
 ::selection {
-  background: rgba(15, 95, 143, 0.2);
+  background: rgba(65, 164, 220, 0.24);
+  color: var(--ink-strong);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(65, 164, 220, 0.35);
+  outline-offset: 3px;
 }
