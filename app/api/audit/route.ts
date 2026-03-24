@@ -29,11 +29,17 @@ export async function POST(request: Request) {
       submittedAt: new Date().toISOString(),
     });
 
-    if (delivery.mode === "resend" && !delivery.sent) {
-      throw new UserFacingError(
-        "We reviewed the site, but couldn't send the submission for follow-up right now. Please try again in a moment.",
-        500,
-      );
+    const isDevelopment = process.env.NODE_ENV !== "production";
+
+    if (!delivery.sent) {
+      if (delivery.mode === "mock" && isDevelopment) {
+        console.info("Audit submission accepted in development mock mode.");
+      } else {
+        throw new UserFacingError(
+          "We couldn't submit the site for follow-up right now. Please try again in a moment.",
+          500,
+        );
+      }
     }
 
     const responseBody: AuditSubmissionResponse = {

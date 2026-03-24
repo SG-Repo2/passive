@@ -6,7 +6,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Free Website Audit for Chicago Small Businesses | chiwebdev.com",
   description:
-    "Check tracking, title tags, and meta descriptions, then get a plain-English website audit emailed to you.",
+    "Submit your homepage for a quick review of tracking and SEO basics. We review the findings and follow up by email.",
 };
 
 export default function RootLayout({
