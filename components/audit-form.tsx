@@ -60,30 +60,34 @@ export function AuditForm() {
 
   return (
     <div className="space-y-6">
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-[2rem] border border-[var(--line)] bg-[var(--surface-strong)] p-6 shadow-[0_28px_65px_-40px_var(--shadow)] xl:p-8"
-      >
-        <div className="mb-6 border-b border-[var(--line)] pb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
-            Free Chicago Audit
-          </p>
-          <h2 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.02em] text-[var(--ink-strong)]">
-            Get your website report
+      <form onSubmit={handleSubmit} className="border-2 border-[var(--ink-strong)] bg-[var(--surface-strong)]">
+        <div className="border-b-2 border-[var(--ink-strong)] bg-white px-5 py-5">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
+              Run the audit
+            </p>
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-strong)]">
+              2 inputs
+            </span>
+          </div>
+          <h2 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
+            Send the homepage.
           </h2>
           <p className="mt-3 max-w-lg text-sm leading-7 text-[var(--muted)]">
-            Enter your homepage and where to send the results. We will review the basics that help people
-            find you, trust you, and contact you.
+            Add the public homepage and the work email where the report should go. We check visible
+            tracking and search essentials only.
           </p>
         </div>
 
-        <div className="grid gap-5">
+        <div className="grid gap-5 bg-[var(--surface-muted)] px-5 py-5">
           <div>
             <div className="flex items-center justify-between gap-4">
               <label htmlFor="website-url" className="text-sm font-semibold text-[var(--ink-strong)]">
                 Business website
               </label>
-              <span className="text-xs font-medium text-[var(--muted)]">Public homepage works best</span>
+              <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
+                Public homepage
+              </span>
             </div>
             <input
               id="website-url"
@@ -94,7 +98,7 @@ export function AuditForm() {
               inputMode="url"
               value={websiteUrl}
               onChange={(event) => setWebsiteUrl(event.target.value)}
-              className="mt-2 w-full rounded-[1.25rem] border border-[rgba(16,38,59,0.16)] bg-white px-4 py-3.5 text-base text-[var(--ink-strong)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none transition placeholder:text-slate-400 focus:border-[var(--accent)] focus:ring-4 focus:ring-[rgba(65,164,220,0.16)]"
+              className="mt-2 w-full border-2 border-[var(--ink-strong)] bg-white px-4 py-4 text-base text-[var(--ink-strong)] outline-none transition placeholder:text-slate-400 focus:border-[var(--accent-red)] focus-visible:outline-none"
               required
             />
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
@@ -107,7 +111,9 @@ export function AuditForm() {
               <label htmlFor="email" className="text-sm font-semibold text-[var(--ink-strong)]">
                 Work email
               </label>
-              <span className="text-xs font-medium text-[var(--muted)]">Where we send the full report</span>
+              <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
+                Report delivery
+              </span>
             </div>
             <input
               id="email"
@@ -117,7 +123,7 @@ export function AuditForm() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="mt-2 w-full rounded-[1.25rem] border border-[rgba(16,38,59,0.16)] bg-white px-4 py-3.5 text-base text-[var(--ink-strong)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none transition placeholder:text-slate-400 focus:border-[var(--accent)] focus:ring-4 focus:ring-[rgba(65,164,220,0.16)]"
+              className="mt-2 w-full border-2 border-[var(--ink-strong)] bg-white px-4 py-4 text-base text-[var(--ink-strong)] outline-none transition placeholder:text-slate-400 focus:border-[var(--accent-red)] focus-visible:outline-none"
               required
             />
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
@@ -128,21 +134,23 @@ export function AuditForm() {
           <button
             type="submit"
             disabled={isPending}
-            className="inline-flex items-center justify-center rounded-full bg-[var(--accent-strong)] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(30,127,182,0.9)] transition hover:bg-[#176a96] disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex items-center justify-center border-2 border-[var(--ink-strong)] bg-[var(--accent-red)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isPending ? "Running your audit..." : "Email my free audit"}
+            {isPending ? "Running audit" : "Run audit"}
           </button>
         </div>
 
-        <div className="mt-5 rounded-[1.5rem] border border-[rgba(65,164,220,0.16)] bg-[rgba(65,164,220,0.08)] px-4 py-4">
-          <p className="text-sm font-medium text-[var(--ink-strong)]">What happens after you submit</p>
+        <div className="border-t-2 border-[var(--ink-strong)] bg-white px-5 py-4">
+          <p className="text-sm font-medium uppercase tracking-[0.14em] text-[var(--ink-strong)]">
+            After submission
+          </p>
           <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-            We email the full report first, then unlock a short preview below. No login or setup required.
+            Short preview on this page. Full report delivered by email.
           </p>
         </div>
 
         {error ? (
-          <div className="mt-4 rounded-[1.25rem] border border-[rgba(214,66,76,0.24)] bg-[rgba(214,66,76,0.08)] px-4 py-3 text-sm text-[var(--ink-strong)]">
+          <div className="border-t-2 border-[var(--accent-red)] bg-[var(--accent-red-soft)] px-5 py-3 text-sm font-medium text-[var(--accent-red)]">
             {error}
           </div>
         ) : null}

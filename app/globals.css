@@ -1,27 +1,27 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: "Avenir Next", "Segoe UI", sans-serif;
-  --font-heading: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
+  --font-sans: "Avenir Next Condensed", "Franklin Gothic Medium", "Arial Narrow", "Helvetica Neue", Arial,
+    sans-serif;
+  --font-heading: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
 }
 
 :root {
-  --background: #f5f9fc;
-  --background-muted: #eaf2f8;
-  --surface: rgba(255, 255, 255, 0.9);
+  --background: #5db7e8;
+  --background-muted: #cfeafb;
+  --surface: #ffffff;
   --surface-strong: #ffffff;
-  --surface-muted: #f7fafc;
-  --ink: #10263b;
-  --ink-strong: #081828;
-  --muted: #526273;
-  --accent: #41a4dc;
-  --accent-strong: #1e7fb6;
-  --accent-soft: rgba(65, 164, 220, 0.14);
-  --accent-red: #d6424c;
-  --accent-red-soft: rgba(214, 66, 76, 0.1);
+  --surface-muted: #edf7fd;
+  --ink: #173047;
+  --ink-strong: #091c2b;
+  --muted: #3f576b;
+  --accent: #2c8fca;
+  --accent-strong: #176c9c;
+  --accent-soft: rgba(93, 183, 232, 0.22);
+  --accent-red: #d5303e;
+  --accent-red-soft: rgba(213, 48, 62, 0.1);
   --success: #0f6b53;
-  --line: rgba(16, 38, 59, 0.12);
-  --shadow: rgba(8, 24, 40, 0.14);
+  --line: rgba(9, 28, 43, 0.14);
 }
 
 * {
@@ -34,10 +34,7 @@ html {
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(65, 164, 220, 0.16), transparent 28%),
-    radial-gradient(circle at 88% 10%, rgba(214, 66, 76, 0.1), transparent 18%),
-    linear-gradient(180deg, #fbfdff 0%, var(--background) 52%, #eef5fa 100%);
+  background: var(--background);
   color: var(--ink);
   font-family: var(--font-sans), sans-serif;
   line-height: 1.5;
@@ -57,11 +54,11 @@ select {
 }
 
 ::selection {
-  background: rgba(65, 164, 220, 0.24);
+  background: rgba(213, 48, 62, 0.2);
   color: var(--ink-strong);
 }
 
 :focus-visible {
-  outline: 3px solid rgba(65, 164, 220, 0.35);
-  outline-offset: 3px;
+  outline: 3px solid var(--accent-red);
+  outline-offset: 2px;
 }
