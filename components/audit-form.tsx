@@ -2,19 +2,19 @@
 
 import { useState, useTransition } from "react";
 
-import { ResultsPanel } from "@/components/results-panel";
-import type { AuditApiResponse } from "@/lib/types";
+import type { AuditSubmissionResponse } from "@/lib/types";
 
 export function AuditForm() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AuditApiResponse | null>(null);
+  const [result, setResult] = useState<AuditSubmissionResponse | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setResult(null);
 
     startTransition(() => {
       void (async () => {
@@ -39,13 +39,14 @@ export function AuditForm() {
               "error" in payload &&
               typeof payload.error === "string"
                 ? payload.error
-                : "Something went wrong while running the audit.";
+              : "Something went wrong while running the audit.";
 
             throw new Error(message);
           }
 
-          setResult(payload as AuditApiResponse);
-          document.getElementById("audit-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          setResult(payload as AuditSubmissionResponse);
+          setWebsiteUrl("");
+          setEmail("");
         } catch (submissionError) {
           setResult(null);
           setError(
@@ -71,11 +72,11 @@ export function AuditForm() {
             </span>
           </div>
           <h2 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
-            Send the homepage.
+            Submit the homepage.
           </h2>
           <p className="mt-3 max-w-lg text-sm leading-7 text-[var(--muted)]">
-            Add the public homepage and the work email where the report should go. We check visible
-            tracking and search essentials only.
+            Add the public homepage and the best email for follow-up. We review visible tracking and
+            search essentials only.
           </p>
         </div>
 
@@ -109,10 +110,10 @@ export function AuditForm() {
           <div>
             <div className="flex items-center justify-between gap-4">
               <label htmlFor="email" className="text-sm font-semibold text-[var(--ink-strong)]">
-                Work email
+                Best email
               </label>
               <span className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
-                Report delivery
+                Follow-up
               </span>
             </div>
             <input
@@ -127,7 +128,7 @@ export function AuditForm() {
               required
             />
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              We only use this address to deliver your audit and follow-up if you reply.
+              We use this to follow up after we review the submission.
             </p>
           </div>
 
@@ -136,7 +137,7 @@ export function AuditForm() {
             disabled={isPending}
             className="inline-flex items-center justify-center border-2 border-[var(--ink-strong)] bg-[var(--accent-red)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isPending ? "Running audit" : "Run audit"}
+            {isPending ? "Submitting site" : "Submit for review"}
           </button>
         </div>
 
@@ -145,7 +146,7 @@ export function AuditForm() {
             After submission
           </p>
           <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-            Short preview on this page. Full report delivered by email.
+            We review the audit internally and follow up by email if the site appears reachable.
           </p>
         </div>
 
@@ -156,7 +157,22 @@ export function AuditForm() {
         ) : null}
       </form>
 
-      {result ? <ResultsPanel result={result} /> : null}
+      {result ? (
+        <section
+          id="audit-confirmation"
+          className="border-2 border-[var(--ink-strong)] bg-[var(--surface-strong)]"
+        >
+          <div className="border-b-2 border-[var(--ink-strong)] bg-white px-5 py-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
+              Submission received
+            </p>
+            <h2 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
+              {result.message}
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">{result.followUp}</p>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

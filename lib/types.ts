@@ -35,25 +35,23 @@ export interface AuditEnhancement {
   businessImpact: string;
 }
 
-export interface AuditReport extends AuditFindings {
-  enhancement: AuditEnhancement;
-}
-
-export interface AuditPreview {
-  simpleExplanation: string;
-  actionableFixes: string[];
-  businessImpact: string;
-}
-
 export interface AuditDelivery {
   mode: DeliveryMode;
   sent: boolean;
   message: string;
 }
 
-export interface AuditApiResponse extends AuditFindings {
-  teaser: AuditPreview;
-  delivery: AuditDelivery;
+export interface AuditLeadNotification {
+  submitterEmail: string;
+  submittedUrl: string;
+  findings: AuditFindings;
+  submittedAt: string;
+}
+
+export interface AuditSubmissionResponse {
+  submitted: true;
+  message: string;
+  followUp: string;
 }
 
 export interface AuditRequestBody {

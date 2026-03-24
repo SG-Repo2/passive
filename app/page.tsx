@@ -24,8 +24,8 @@ const trustPoints = [
     description: "The audit checks what customers can actually see on the homepage, nothing behind a login.",
   },
   {
-    title: "Plain-English report",
-    description: "You get a short email with the first fixes worth making, written for owners and operators.",
+    title: "Human follow-up",
+    description: "Each submission is reviewed before follow-up, so the process stays grounded and low-maintenance.",
   },
 ];
 
@@ -39,15 +39,15 @@ const coveragePoints = [
     description: "Title tags and meta descriptions are reviewed for obvious missed signals.",
   },
   {
-    title: "First fixes",
-    description: "The report explains what matters, what does not, and what to fix first.",
+    title: "Manual review",
+    description: "We use the raw findings internally, then follow up if the submission looks like a good fit.",
   },
 ];
 
 const workflowPoints = [
-  "Send the homepage URL and the email where the report should land.",
+  "Send the homepage URL and the best email for follow-up.",
   "The audit checks visible tracking and search signals on the public homepage.",
-  "You see a short preview on the page and the full report arrives by email.",
+  "You get a confirmation right away, and we follow up by email after review.",
 ];
 
 const guardrails = [
@@ -89,8 +89,8 @@ export default function Home() {
               See what your website is missing before it costs you leads.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--muted)]">
-              We review the public homepage for tracking setup, search basics, and obvious missed
-              signals, then email a short report with the first fixes worth making.
+              Submit your public homepage for a quick review of tracking setup, search basics, and
+              obvious missed signals. If the site looks reachable, we follow up by email.
             </p>
             <p className="mt-5 max-w-2xl text-sm font-semibold uppercase tracking-[0.2em] text-[var(--ink-strong)]">
               No login. No credit card. No padded language.
@@ -131,7 +131,7 @@ export default function Home() {
             </p>
             <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--muted)]">
               The page leads with scope, not hype. Business owners can see exactly what gets checked,
-              how the audit works, and why the output is useful before they submit.
+              how the review works, and what happens after they submit.
             </p>
           </div>
         </div>

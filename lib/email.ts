@@ -1,35 +1,35 @@
 import { Resend } from "resend";
 
-import { buildAuditReportHtml, buildAuditReportText, buildDeliveryMessage } from "@/lib/report";
-import type { AuditDelivery, AuditReport } from "@/lib/types";
+import {
+  buildAuditLeadNotificationHtml,
+  buildAuditLeadNotificationText,
+  buildDeliveryMessage,
+} from "@/lib/report";
+import type { AuditDelivery, AuditLeadNotification } from "@/lib/types";
 
-interface SendAuditReportEmailArgs {
-  to: string;
-  report: AuditReport;
+function getLeadNotificationEmail(): string {
+  return process.env.LEAD_NOTIFICATION_EMAIL?.trim() ?? "";
 }
 
-function getContactEmail(): string {
-  return process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@chiwebdev.com";
-}
-
-export async function sendAuditReportEmail({
-  to,
-  report,
-}: SendAuditReportEmailArgs): Promise<AuditDelivery> {
+export async function sendAuditLeadNotificationEmail(
+  notification: AuditLeadNotification,
+): Promise<AuditDelivery> {
   const apiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.AUDIT_REPORT_FROM_EMAIL;
-  const contactEmail = getContactEmail();
+  const ownerEmail = getLeadNotificationEmail();
+  const hostname = new URL(notification.findings.finalUrl).hostname;
+  const text = buildAuditLeadNotificationText(notification);
 
-  if (!apiKey || !fromEmail) {
-    console.info("Audit email mock delivery", {
-      to,
-      report: buildAuditReportText(report, contactEmail),
+  if (!apiKey || !fromEmail || !ownerEmail) {
+    console.info("Audit lead notification mock delivery", {
+      to: ownerEmail || "missing-owner-email",
+      notification: text,
     });
 
     return {
       mode: "mock",
       sent: false,
-      message: buildDeliveryMessage("mock", false, to),
+      message: buildDeliveryMessage("mock", false, ownerEmail || "missing-owner-email"),
     };
   }
 
@@ -38,25 +38,25 @@ export async function sendAuditReportEmail({
 
     await resend.emails.send({
       from: fromEmail,
-      to,
-      subject: `Your chiwebdev.com audit for ${new URL(report.finalUrl).hostname}`,
-      html: buildAuditReportHtml(report, contactEmail),
-      text: buildAuditReportText(report, contactEmail),
-      replyTo: contactEmail,
+      to: ownerEmail,
+      subject: `New chiwebdev audit lead: ${hostname}`,
+      html: buildAuditLeadNotificationHtml(notification),
+      text,
+      replyTo: notification.submitterEmail,
     });
 
     return {
       mode: "resend",
       sent: true,
-      message: buildDeliveryMessage("resend", true, to),
+      message: buildDeliveryMessage("resend", true, ownerEmail),
     };
   } catch (error) {
-    console.error("Resend email delivery failed.", error);
+    console.error("Resend lead notification delivery failed.", error);
 
     return {
       mode: "resend",
       sent: false,
-      message: buildDeliveryMessage("resend", false, to),
+      message: buildDeliveryMessage("resend", false, ownerEmail),
     };
   }
 }

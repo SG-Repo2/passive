@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { auditWebsite } from "@/lib/audit";
-import { sendAuditReportEmail } from "@/lib/email";
-import { generateAuditEnhancement } from "@/lib/llm";
-import { buildAuditPreview } from "@/lib/report";
-import type { AuditApiResponse, AuditRequestBody, AuditReport } from "@/lib/types";
+import { sendAuditLeadNotificationEmail } from "@/lib/email";
+import type { AuditRequestBody, AuditSubmissionResponse } from "@/lib/types";
 import { UserFacingError, validateEmailAddress } from "@/lib/validators";
 
 export const runtime = "nodejs";
@@ -21,24 +19,27 @@ export async function POST(request: Request) {
       throw new UserFacingError("Please submit a valid JSON request body.");
     }
 
-    const email = validateEmailAddress(body.email ?? "");
-    const findings = await auditWebsite(body.url ?? "");
-    const enhancement = await generateAuditEnhancement(findings);
-
-    const fullReport: AuditReport = {
-      ...findings,
-      enhancement,
-    };
-
-    const delivery = await sendAuditReportEmail({
-      to: email,
-      report: fullReport,
+    const submitterEmail = validateEmailAddress(typeof body.email === "string" ? body.email : "");
+    const submittedUrl = typeof body.url === "string" ? body.url.trim() : "";
+    const findings = await auditWebsite(submittedUrl);
+    const delivery = await sendAuditLeadNotificationEmail({
+      submitterEmail,
+      submittedUrl,
+      findings,
+      submittedAt: new Date().toISOString(),
     });
 
-    const responseBody: AuditApiResponse = {
-      ...findings,
-      teaser: buildAuditPreview(fullReport),
-      delivery,
+    if (delivery.mode === "resend" && !delivery.sent) {
+      throw new UserFacingError(
+        "We reviewed the site, but couldn't send the submission for follow-up right now. Please try again in a moment.",
+        500,
+      );
+    }
+
+    const responseBody: AuditSubmissionResponse = {
+      submitted: true,
+      message: "Thanks. Your website has been submitted for review.",
+      followUp: "We'll take a look and follow up by email if the site appears reachable.",
     };
 
     return NextResponse.json(responseBody);

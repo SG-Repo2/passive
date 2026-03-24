@@ -1,29 +1,36 @@
 import type {
-  AuditPreview,
-  AuditReport,
+  AuditLeadNotification,
   DeliveryMode,
   SeoCheck,
   TrackingCheck,
 } from "@/lib/types";
 
-function truncate(value: string, maxLength: number): string {
-  if (value.length <= maxLength) {
-    return value;
-  }
-
-  return `${value.slice(0, Math.max(maxLength - 1, 0)).trimEnd()}…`;
-}
-
-function renderBooleanLabel(value: boolean): string {
+function renderSeoStatus(value: boolean): string {
   return value ? "Pass" : "Needs attention";
 }
 
+function renderTrackingStatus(value: boolean): string {
+  return value ? "Detected" : "Not detected";
+}
+
 function renderTrackingRow(label: string, check: TrackingCheck): string {
-  return `- ${label}: ${check.detected ? "Detected" : "Not detected"} (${check.details})`;
+  return `- ${label}: ${renderTrackingStatus(check.detected)}`;
+}
+
+function renderTrackingDetail(label: string, check: TrackingCheck): string {
+  return `- ${label}: ${check.details}`;
 }
 
 function renderSeoRow(label: string, check: SeoCheck): string {
-  return `- ${label}: ${renderBooleanLabel(check.passed)} (${check.details})`;
+  return `- ${label}: ${renderSeoStatus(check.passed)}`;
+}
+
+function renderSeoDetail(label: string, check: SeoCheck): string {
+  return `- ${label}: ${check.details}`;
+}
+
+function renderContentType(contentType: string | null): string {
+  return contentType ?? "Unknown";
 }
 
 function escapeHtml(value: string): string {
@@ -35,121 +42,113 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-export function buildAuditPreview(report: AuditReport): AuditPreview {
-  return {
-    simpleExplanation: truncate(report.enhancement.simpleExplanation, 240),
-    actionableFixes: report.enhancement.actionableFixes.slice(0, 2),
-    businessImpact: truncate(report.enhancement.businessImpact, 220),
-  };
-}
-
-export function buildAuditReportText(report: AuditReport, contactEmail: string): string {
-  const fixes = report.enhancement.actionableFixes.map((item, index) => `${index + 1}. ${item}`).join("\n");
+export function buildAuditLeadNotificationText(notification: AuditLeadNotification): string {
+  const { findings, submitterEmail, submittedAt, submittedUrl } = notification;
 
   return [
-    `Website audit for ${report.finalUrl}`,
+    "New audit submission",
     "",
-    "Quick summary",
-    report.summary,
+    "Lead email:",
+    submitterEmail,
     "",
-    "Plain-English explanation",
-    report.enhancement.simpleExplanation,
+    "Submitted URL:",
+    submittedUrl,
     "",
-    "Recommended fixes",
-    fixes,
+    "Normalized URL:",
+    findings.auditedUrl,
     "",
-    "Business impact",
-    report.enhancement.businessImpact,
+    "Final URL:",
+    findings.finalUrl,
+    "",
+    "HTTP status:",
+    String(findings.httpStatus),
+    "",
+    "Content type:",
+    renderContentType(findings.contentType),
+    "",
+    "Summary:",
+    findings.summary,
     "",
     "Tracking checks",
-    renderTrackingRow("Google Tag Manager", report.tracking.gtm),
-    renderTrackingRow("GA4", report.tracking.ga4),
-    renderTrackingRow("Meta Pixel", report.tracking.metaPixel),
+    renderTrackingRow("Google Tag Manager", findings.tracking.gtm),
+    renderTrackingRow("GA4", findings.tracking.ga4),
+    renderTrackingRow("Meta Pixel", findings.tracking.metaPixel),
+    "",
+    "Tracking details",
+    renderTrackingDetail("GTM", findings.tracking.gtm),
+    renderTrackingDetail("GA4", findings.tracking.ga4),
+    renderTrackingDetail("Meta Pixel", findings.tracking.metaPixel),
     "",
     "SEO checks",
-    renderSeoRow("Title tag", report.seo.titleTag),
-    renderSeoRow("Meta description", report.seo.metaDescription),
+    renderSeoRow("Title tag", findings.seo.titleTag),
+    renderSeoRow("Meta description", findings.seo.metaDescription),
     "",
-    `Want this fixed for you? Reply to this email or contact ${contactEmail}.`,
+    "SEO details",
+    renderSeoDetail("Title tag", findings.seo.titleTag),
+    renderSeoDetail("Meta description", findings.seo.metaDescription),
+    "",
+    "Submitted at:",
+    submittedAt,
+    "",
+    "Follow-up note:",
+    "Reach out manually to this lead if the submission looks valid.",
   ].join("\n");
 }
 
-export function buildAuditReportHtml(report: AuditReport, contactEmail: string): string {
-  const actionItems = report.enhancement.actionableFixes
-    .map((item) => `<li style="margin-bottom:10px;">${escapeHtml(item)}</li>`)
-    .join("");
-
-  const trackingRows = [
-    report.tracking.gtm,
-    report.tracking.ga4,
-    report.tracking.metaPixel,
-  ]
-    .map(
-      (item) => `
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;font-weight:600;">${escapeHtml(item.label)}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;">${item.detected ? "Detected" : "Not detected"}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;">${escapeHtml(item.details)}</td>
-        </tr>`,
-    )
-    .join("");
-
-  const seoRows = [report.seo.titleTag, report.seo.metaDescription]
-    .map(
-      (item) => `
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;font-weight:600;">${escapeHtml(item.label)}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;">${item.passed ? "Pass" : "Needs attention"}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #d6e1ea;">${escapeHtml(item.details)}</td>
-        </tr>`,
-    )
-    .join("");
-
-  const mailtoHref = `mailto:${encodeURIComponent(contactEmail)}?subject=${encodeURIComponent("Website audit follow-up")}`;
+export function buildAuditLeadNotificationHtml(notification: AuditLeadNotification): string {
+  const { findings, submitterEmail, submittedAt, submittedUrl } = notification;
 
   return `
-    <div style="margin:0;padding:32px;background:#f5f9fc;font-family:Arial,sans-serif;color:#10263b;">
-      <div style="max-width:720px;margin:0 auto;background:#ffffff;border-radius:20px;border:1px solid #d6e1ea;overflow:hidden;">
-        <div style="height:6px;background:#d6424c;"></div>
-        <div style="padding:28px 32px;background:linear-gradient(135deg,#41a4dc 0%,#10263b 100%);color:#ffffff;">
-          <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;">chiwebdev.com</p>
-          <h1 style="margin:0;font-size:28px;line-height:1.15;">Your Website Audit Is Ready</h1>
-          <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.82);">
-            Website reviewed: ${escapeHtml(report.finalUrl)}
+    <div style="margin:0;padding:24px;background:#f5f1ea;font-family:Arial,sans-serif;color:#10263b;">
+      <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #10263b;">
+        <div style="padding:24px 28px;border-bottom:1px solid #10263b;background:#fdf8f2;">
+          <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#8f342e;">
+            chiwebdev audit lead
           </p>
+          <h1 style="margin:0;font-size:28px;line-height:1.15;">New audit submission</h1>
         </div>
 
-        <div style="padding:32px;">
-          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Quick summary</h2>
-          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#425466;">${escapeHtml(report.summary)}</p>
+        <div style="padding:28px;">
+          <p style="margin:0 0 12px;"><strong>Lead email:</strong> ${escapeHtml(submitterEmail)}</p>
+          <p style="margin:0 0 12px;"><strong>Submitted URL:</strong> ${escapeHtml(submittedUrl)}</p>
+          <p style="margin:0 0 12px;"><strong>Normalized URL:</strong> ${escapeHtml(findings.auditedUrl)}</p>
+          <p style="margin:0 0 12px;"><strong>Final URL:</strong> ${escapeHtml(findings.finalUrl)}</p>
+          <p style="margin:0 0 12px;"><strong>HTTP status:</strong> ${findings.httpStatus}</p>
+          <p style="margin:0 0 12px;"><strong>Content type:</strong> ${escapeHtml(renderContentType(findings.contentType))}</p>
+          <p style="margin:0 0 24px;"><strong>Submitted at:</strong> ${escapeHtml(submittedAt)}</p>
 
-          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Plain-English explanation</h2>
-          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#425466;">${escapeHtml(report.enhancement.simpleExplanation)}</p>
+          <h2 style="margin:0 0 10px;font-size:18px;">Summary</h2>
+          <p style="margin:0 0 24px;line-height:1.7;color:#425466;">${escapeHtml(findings.summary)}</p>
 
-          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Recommended fixes</h2>
-          <ol style="margin:0 0 24px;padding-left:20px;font-size:15px;line-height:1.7;color:#425466;">
-            ${actionItems}
-          </ol>
+          <h2 style="margin:0 0 10px;font-size:18px;">Tracking checks</h2>
+          <ul style="margin:0 0 24px;padding-left:20px;line-height:1.8;color:#425466;">
+            <li>Google Tag Manager: ${renderTrackingStatus(findings.tracking.gtm.detected)}</li>
+            <li>GA4: ${renderTrackingStatus(findings.tracking.ga4.detected)}</li>
+            <li>Meta Pixel: ${renderTrackingStatus(findings.tracking.metaPixel.detected)}</li>
+          </ul>
 
-          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Business impact</h2>
-          <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#425466;">${escapeHtml(report.enhancement.businessImpact)}</p>
+          <h2 style="margin:0 0 10px;font-size:18px;">Tracking details</h2>
+          <ul style="margin:0 0 24px;padding-left:20px;line-height:1.8;color:#425466;">
+            <li>GTM: ${escapeHtml(findings.tracking.gtm.details)}</li>
+            <li>GA4: ${escapeHtml(findings.tracking.ga4.details)}</li>
+            <li>Meta Pixel: ${escapeHtml(findings.tracking.metaPixel.details)}</li>
+          </ul>
 
-          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">Tracking checks</h2>
-          <table style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:14px;color:#425466;">
-            <tbody>${trackingRows}</tbody>
-          </table>
+          <h2 style="margin:0 0 10px;font-size:18px;">SEO checks</h2>
+          <ul style="margin:0 0 24px;padding-left:20px;line-height:1.8;color:#425466;">
+            <li>Title tag: ${renderSeoStatus(findings.seo.titleTag.passed)}</li>
+            <li>Meta description: ${renderSeoStatus(findings.seo.metaDescription.passed)}</li>
+          </ul>
 
-          <h2 style="margin:0 0 10px;font-size:20px;color:#081828;">SEO checks</h2>
-          <table style="width:100%;border-collapse:collapse;margin:0 0 32px;font-size:14px;color:#425466;">
-            <tbody>${seoRows}</tbody>
-          </table>
+          <h2 style="margin:0 0 10px;font-size:18px;">SEO details</h2>
+          <ul style="margin:0 0 24px;padding-left:20px;line-height:1.8;color:#425466;">
+            <li>Title tag: ${escapeHtml(findings.seo.titleTag.details)}</li>
+            <li>Meta description: ${escapeHtml(findings.seo.metaDescription.details)}</li>
+          </ul>
 
-          <a
-            href="${mailtoHref}"
-            style="display:inline-block;padding:14px 22px;border-radius:999px;background:#1e7fb6;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;"
-          >
-            Want this fixed for you?
-          </a>
+          <p style="margin:0;line-height:1.7;color:#425466;">
+            <strong>Follow-up note:</strong> Reach out manually to this lead if the submission looks valid.
+          </p>
         </div>
       </div>
     </div>
@@ -158,12 +157,12 @@ export function buildAuditReportHtml(report: AuditReport, contactEmail: string):
 
 export function buildDeliveryMessage(mode: DeliveryMode, sent: boolean, email: string): string {
   if (mode === "resend" && sent) {
-    return `Full report sent to ${email}.`;
+    return `Lead notification sent to ${email}.`;
   }
 
   if (mode === "resend" && !sent) {
-    return "We generated the report, but email delivery failed. Check your Resend sender settings and try again.";
+    return "We completed the audit, but the internal lead notification email failed to send.";
   }
 
-  return "Email delivery is running in mock mode. Configure Resend to send the full report.";
+  return "Lead notification email is running in mock mode. Configure LEAD_NOTIFICATION_EMAIL, RESEND_API_KEY, and AUDIT_REPORT_FROM_EMAIL to send real emails.";
 }
