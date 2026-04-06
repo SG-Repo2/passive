@@ -7,9 +7,25 @@ import type { AuditSubmissionResponse } from "@/lib/types";
 export function AuditForm() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AuditSubmissionResponse | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  async function readSubmissionPayload(response: Response): Promise<unknown> {
+    const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+
+    if (contentType.includes("application/json")) {
+      try {
+        return (await response.json()) as unknown;
+      } catch {
+        return null;
+      }
+    }
+
+    const text = await response.text();
+    return text ? { error: text } : null;
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,10 +43,11 @@ export function AuditForm() {
             body: JSON.stringify({
               url: websiteUrl,
               email,
+              company,
             }),
           });
 
-          const payload = (await response.json()) as unknown;
+          const payload = await readSubmissionPayload(response);
 
           if (!response.ok) {
             const message =
@@ -47,6 +64,7 @@ export function AuditForm() {
           setResult(payload as AuditSubmissionResponse);
           setWebsiteUrl("");
           setEmail("");
+          setCompany("");
         } catch (submissionError) {
           setResult(null);
           setError(
@@ -81,6 +99,19 @@ export function AuditForm() {
         </div>
 
         <div className="grid gap-5 bg-[var(--surface-muted)] px-5 py-5">
+          <div className="hidden" aria-hidden="true">
+            <label htmlFor="company">Company</label>
+            <input
+              id="company"
+              name="company"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={company}
+              onChange={(event) => setCompany(event.target.value)}
+            />
+          </div>
+
           <div>
             <div className="flex items-center justify-between gap-4">
               <label htmlFor="website-url" className="text-sm font-semibold text-[var(--ink-strong)]">
@@ -151,7 +182,10 @@ export function AuditForm() {
         </div>
 
         {error ? (
-          <div className="border-t-2 border-[var(--accent-red)] bg-[var(--accent-red-soft)] px-5 py-3 text-sm font-medium text-[var(--accent-red)]">
+          <div
+            aria-live="polite"
+            className="border-t-2 border-[var(--accent-red)] bg-[var(--accent-red-soft)] px-5 py-3 text-sm font-medium text-[var(--accent-red)]"
+          >
             {error}
           </div>
         ) : null}
@@ -160,6 +194,7 @@ export function AuditForm() {
       {result ? (
         <section
           id="audit-confirmation"
+          aria-live="polite"
           className="border-2 border-[var(--ink-strong)] bg-[var(--surface-strong)]"
         >
           <div className="border-b-2 border-[var(--ink-strong)] bg-white px-5 py-5">

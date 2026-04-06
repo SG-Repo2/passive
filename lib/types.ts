@@ -1,4 +1,5 @@
 export type DeliveryMode = "mock" | "resend";
+export type DeliveryFailureReason = "config_missing" | "provider_error";
 
 export interface TrackingCheck {
   label: string;
@@ -39,6 +40,9 @@ export interface AuditDelivery {
   mode: DeliveryMode;
   sent: boolean;
   message: string;
+  failureReason?: DeliveryFailureReason;
+  missingEnv?: string[];
+  providerErrorCode?: string;
 }
 
 export interface AuditLeadNotification {
@@ -52,6 +56,10 @@ export interface AuditSubmissionResponse {
   submitted: true;
   message: string;
   followUp: string;
+}
+
+export interface AuditErrorResponse {
+  error: string;
 }
 
 export interface AuditRequestBody {

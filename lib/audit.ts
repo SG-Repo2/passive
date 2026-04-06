@@ -1,11 +1,17 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
+import { logAuditEvent, serializeError } from "@/lib/logging";
 import type { AuditFindings, SeoCheck, TrackingCheck } from "@/lib/types";
 import { UserFacingError, normalizeWebsiteUrl } from "@/lib/validators";
 
 const MAX_HTML_BYTES = 512_000;
 const REQUEST_TIMEOUT_MS = 12_000;
+const MAX_REDIRECTS = 5;
+
+export interface AuditExecutionOptions {
+  requestId?: string;
+}
 
 function isPrivateHostname(hostname: string): boolean {
   const value = hostname.toLowerCase();
@@ -72,6 +78,33 @@ function isReservedIp(ip: string): boolean {
   return true;
 }
 
+function mapLookupError(error: unknown): UserFacingError {
+  const code =
+    error instanceof Error && "code" in error && typeof error.code === "string" ? error.code : null;
+
+  if (code === "ENOTFOUND") {
+    return new UserFacingError(
+      "We couldn't resolve that website. Please double-check the URL.",
+      400,
+      "dns_not_found",
+    );
+  }
+
+  if (code === "EAI_AGAIN" || code === "ETIMEDOUT") {
+    return new UserFacingError(
+      "We couldn't verify that website right now. Please try again in a moment.",
+      504,
+      "dns_timeout",
+    );
+  }
+
+  return new UserFacingError(
+    "We couldn't verify that the website is publicly reachable.",
+    502,
+    "dns_lookup_failed",
+  );
+}
+
 async function assertPublicUrl(rawInput: string): Promise<URL> {
   const normalized = normalizeWebsiteUrl(rawInput);
   let parsedUrl: URL;
@@ -88,6 +121,14 @@ async function assertPublicUrl(rawInput: string): Promise<URL> {
 
   if (!parsedUrl.hostname) {
     throw new UserFacingError("Please enter a valid website URL.");
+  }
+
+  if (parsedUrl.username || parsedUrl.password) {
+    throw new UserFacingError(
+      "Please enter a public website URL without embedded credentials.",
+      400,
+      "credentials_not_allowed",
+    );
   }
 
   if (isPrivateHostname(parsedUrl.hostname)) {
@@ -109,7 +150,7 @@ async function assertPublicUrl(rawInput: string): Promise<URL> {
       throw error;
     }
 
-    throw new UserFacingError("We couldn't verify that the website is publicly reachable.");
+    throw mapLookupError(error);
   }
 
   return parsedUrl;
@@ -201,18 +242,171 @@ function summarizeFindings(findings: Omit<AuditFindings, "summary">): string {
   return `${trackingSummary} ${seoSummary} ${statusSummary}`;
 }
 
-export async function auditWebsite(rawInput: string): Promise<AuditFindings> {
-  const parsedUrl = await assertPublicUrl(rawInput);
+function isRedirectStatus(status: number): boolean {
+  return status === 301 || status === 302 || status === 303 || status === 307 || status === 308;
+}
 
-  const response = await fetch(parsedUrl.toString(), {
+function mapFetchError(error: unknown): UserFacingError {
+  if (error instanceof UserFacingError) {
+    return error;
+  }
+
+  if (error instanceof Error && error.name === "TimeoutError") {
+    return new UserFacingError(
+      "The website took too long to respond. Please try another URL.",
+      504,
+      "audit_timeout",
+    );
+  }
+
+  const code =
+    error instanceof Error &&
+    "cause" in error &&
+    error.cause &&
+    typeof error.cause === "object" &&
+    "code" in error.cause &&
+    typeof error.cause.code === "string"
+      ? error.cause.code
+      : null;
+
+  if (code === "UND_ERR_CONNECT_TIMEOUT" || code === "ETIMEDOUT") {
+    return new UserFacingError(
+      "The website took too long to respond. Please try another URL.",
+      504,
+      "audit_timeout",
+    );
+  }
+
+  if (code === "ENOTFOUND") {
+    return new UserFacingError(
+      "We couldn't resolve that website. Please double-check the URL.",
+      400,
+      "dns_not_found",
+    );
+  }
+
+  if (
+    code === "ECONNREFUSED" ||
+    code === "ECONNRESET" ||
+    code === "EHOSTUNREACH" ||
+    code === "ENETUNREACH" ||
+    code === "UNABLE_TO_GET_ISSUER_CERT_LOCALLY" ||
+    code === "CERT_HAS_EXPIRED" ||
+    code === "SELF_SIGNED_CERT_IN_CHAIN" ||
+    code === "DEPTH_ZERO_SELF_SIGNED_CERT" ||
+    code === "ERR_TLS_CERT_ALTNAME_INVALID"
+  ) {
+    return new UserFacingError(
+      "We couldn't reach that website from our audit service. Please confirm the URL is public and reachable.",
+      502,
+      "audit_unreachable",
+    );
+  }
+
+  return new UserFacingError(
+    "We couldn't reach that website from our audit service. Please try again in a moment.",
+    502,
+    "audit_fetch_failed",
+  );
+}
+
+function createAuditFetchOptions(timeoutMs: number): RequestInit {
+  return {
     headers: {
       "user-agent": "chiwebdev-audit-bot/1.0 (+https://chiwebdev.com)",
       accept: "text/html,application/xhtml+xml",
     },
-    redirect: "follow",
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    redirect: "manual",
+    signal: AbortSignal.timeout(timeoutMs),
     cache: "no-store",
+  };
+}
+
+async function fetchAuditResponse(
+  initialUrl: URL,
+  options: AuditExecutionOptions,
+): Promise<{ response: Response; finalUrl: string }> {
+  let currentUrl = initialUrl;
+
+  logAuditEvent("info", "audit_fetch_started", {
+    requestId: options.requestId,
+    auditedUrl: initialUrl.toString(),
   });
+
+  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
+    let response: Response;
+
+    try {
+      response = await fetch(currentUrl.toString(), createAuditFetchOptions(REQUEST_TIMEOUT_MS));
+    } catch (error) {
+      logAuditEvent("warn", "audit_fetch_failed", {
+        requestId: options.requestId,
+        auditedUrl: currentUrl.toString(),
+        error: serializeError(error),
+      });
+
+      throw mapFetchError(error);
+    }
+
+    if (isRedirectStatus(response.status)) {
+      const location = response.headers.get("location");
+
+      if (!location) {
+        throw new UserFacingError(
+          "The website returned an invalid redirect response.",
+          502,
+          "invalid_redirect",
+        );
+      }
+
+      if (redirectCount === MAX_REDIRECTS) {
+        throw new UserFacingError(
+          "The website redirected too many times. Please try the final URL directly.",
+          400,
+          "too_many_redirects",
+        );
+      }
+
+      const redirectedUrl = await assertPublicUrl(new URL(location, currentUrl).toString());
+
+      logAuditEvent("info", "audit_redirect_followed", {
+        requestId: options.requestId,
+        fromUrl: currentUrl.toString(),
+        toUrl: redirectedUrl.toString(),
+        status: response.status,
+      });
+
+      currentUrl = redirectedUrl;
+      continue;
+    }
+
+    logAuditEvent("info", "audit_fetch_completed", {
+      requestId: options.requestId,
+      auditedUrl: initialUrl.toString(),
+      finalUrl: currentUrl.toString(),
+      status: response.status,
+      contentType: response.headers.get("content-type"),
+    });
+
+    return {
+      response,
+      finalUrl: currentUrl.toString(),
+    };
+  }
+
+  throw new UserFacingError(
+    "The website redirected too many times. Please try the final URL directly.",
+    400,
+    "too_many_redirects",
+  );
+}
+
+export async function auditWebsite(
+  rawInput: string,
+  options: AuditExecutionOptions = {},
+): Promise<AuditFindings> {
+  const parsedUrl = await assertPublicUrl(rawInput);
+  const { response, finalUrl } = await fetchAuditResponse(parsedUrl, options);
 
   const contentType = response.headers.get("content-type");
 
@@ -244,7 +438,7 @@ export async function auditWebsite(rawInput: string): Promise<AuditFindings> {
 
   const findingsWithoutSummary: Omit<AuditFindings, "summary"> = {
     auditedUrl: parsedUrl.toString(),
-    finalUrl: response.url,
+    finalUrl,
     httpStatus: response.status,
     contentType,
     tracking: {

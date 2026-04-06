@@ -164,5 +164,9 @@ export function buildDeliveryMessage(mode: DeliveryMode, sent: boolean, email: s
     return "We completed the audit, but the internal lead notification email failed to send.";
   }
 
+  if (sent) {
+    return "Lead notification email is running in local mock mode.";
+  }
+
   return "Lead notification email is running in mock mode. Configure LEAD_NOTIFICATION_EMAIL, RESEND_API_KEY, and AUDIT_REPORT_FROM_EMAIL to send real emails.";
 }

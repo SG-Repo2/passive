@@ -1,73 +1,33 @@
-import { NextResponse } from "next/server";
-
-import { auditWebsite } from "@/lib/audit";
-import { sendAuditLeadNotificationEmail } from "@/lib/email";
-import type { AuditRequestBody, AuditSubmissionResponse } from "@/lib/types";
-import { UserFacingError, validateEmailAddress } from "@/lib/validators";
+import {
+  handleAuditSubmissionRequest,
+  methodNotAllowedResponse,
+  optionsResponse,
+} from "@/lib/audit-submission";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(request: Request) {
-  try {
-    let body: Partial<AuditRequestBody>;
+  return handleAuditSubmissionRequest(request);
+}
 
-    try {
-      body = (await request.json()) as Partial<AuditRequestBody>;
-    } catch {
-      throw new UserFacingError("Please submit a valid JSON request body.");
-    }
+export async function GET() {
+  return methodNotAllowedResponse("GET");
+}
 
-    const submitterEmail = validateEmailAddress(typeof body.email === "string" ? body.email : "");
-    const submittedUrl = typeof body.url === "string" ? body.url.trim() : "";
-    const findings = await auditWebsite(submittedUrl);
-    const delivery = await sendAuditLeadNotificationEmail({
-      submitterEmail,
-      submittedUrl,
-      findings,
-      submittedAt: new Date().toISOString(),
-    });
+export async function PUT() {
+  return methodNotAllowedResponse("PUT");
+}
 
-    const isDevelopment = process.env.NODE_ENV !== "production";
+export async function PATCH() {
+  return methodNotAllowedResponse("PATCH");
+}
 
-    if (!delivery.sent) {
-      if (delivery.mode === "mock" && isDevelopment) {
-        console.info("Audit submission accepted in development mock mode.");
-      } else {
-        throw new UserFacingError(
-          "We couldn't submit the site for follow-up right now. Please try again in a moment.",
-          500,
-        );
-      }
-    }
+export async function DELETE() {
+  return methodNotAllowedResponse("DELETE");
+}
 
-    const responseBody: AuditSubmissionResponse = {
-      submitted: true,
-      message: "Thanks. Your website has been submitted for review.",
-      followUp: "We'll take a look and follow up by email if the site appears reachable.",
-    };
-
-    return NextResponse.json(responseBody);
-  } catch (error) {
-    console.error("Audit request failed.", error);
-
-    if (error instanceof UserFacingError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-
-    if (error instanceof Error && error.name === "TimeoutError") {
-      return NextResponse.json(
-        { error: "The website took too long to respond. Please try another URL." },
-        { status: 504 },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        error: "We couldn't complete the audit right now. Please try again in a moment.",
-      },
-      { status: 500 },
-    );
-  }
+export async function OPTIONS() {
+  return optionsResponse();
 }
