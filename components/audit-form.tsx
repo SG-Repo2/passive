@@ -1,8 +1,23 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 
 import type { AuditSubmissionResponse } from "@/lib/types";
+
+function isAuditSubmissionResponse(payload: unknown): payload is AuditSubmissionResponse {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "submitted" in payload &&
+    payload.submitted === true &&
+    "message" in payload &&
+    typeof payload.message === "string" &&
+    "followUp" in payload &&
+    typeof payload.followUp === "string" &&
+    "deliveryState" in payload &&
+    (payload.deliveryState === "confirmed" || payload.deliveryState === "degraded")
+  );
+}
 
 export function AuditForm() {
   const [websiteUrl, setWebsiteUrl] = useState("");
@@ -10,7 +25,7 @@ export function AuditForm() {
   const [company, setCompany] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AuditSubmissionResponse | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function readSubmissionPayload(response: Response): Promise<unknown> {
     const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
@@ -27,59 +42,71 @@ export function AuditForm() {
     return text ? { error: text } : null;
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setResult(null);
+    setIsSubmitting(true);
 
-    startTransition(() => {
-      void (async () => {
-        try {
-          const response = await fetch("/api/audit", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              url: websiteUrl,
-              email,
-              company,
-            }),
-          });
+    try {
+      const response = await fetch("/api/audit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: websiteUrl.trim(),
+          email: email.trim(),
+          company,
+        }),
+      });
 
-          const payload = await readSubmissionPayload(response);
+      const payload = await readSubmissionPayload(response);
 
-          if (!response.ok) {
-            const message =
-              typeof payload === "object" &&
-              payload !== null &&
-              "error" in payload &&
-              typeof payload.error === "string"
-                ? payload.error
-              : "Something went wrong while running the audit.";
+      if (!response.ok) {
+        const message =
+          typeof payload === "object" &&
+          payload !== null &&
+          "error" in payload &&
+          typeof payload.error === "string"
+            ? payload.error
+            : "Something went wrong while running the audit.";
 
-            throw new Error(message);
-          }
+        throw new Error(message);
+      }
 
-          setResult(payload as AuditSubmissionResponse);
-          setWebsiteUrl("");
-          setEmail("");
-          setCompany("");
-        } catch (submissionError) {
-          setResult(null);
-          setError(
-            submissionError instanceof Error
-              ? submissionError.message
-              : "Something went wrong while running the audit.",
-          );
-        }
-      })();
-    });
+      if (!isAuditSubmissionResponse(payload)) {
+        throw new Error("We received an unexpected response. Please try again.");
+      }
+
+      setResult(payload);
+      setWebsiteUrl("");
+      setEmail("");
+      setCompany("");
+    } catch (submissionError) {
+      setResult(null);
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : "Something went wrong while running the audit.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
+
+  const hasDegradedDelivery = result?.deliveryState === "degraded";
+  const backupContactHref = result?.backupContactEmail
+    ? `mailto:${result.backupContactEmail}`
+    : null;
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="border-2 border-[var(--ink-strong)] bg-[var(--surface-strong)]">
+      <form
+        onSubmit={handleSubmit}
+        aria-busy={isSubmitting}
+        className="border-2 border-[var(--ink-strong)] bg-[var(--surface-strong)] [box-shadow:8px_8px_0_0_var(--ink-strong)] sm:[box-shadow:12px_12px_0_0_var(--ink-strong)]"
+      >
         <div className="border-b-2 border-[var(--ink-strong)] bg-white px-5 py-5">
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
@@ -165,10 +192,10 @@ export function AuditForm() {
 
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isSubmitting}
             className="inline-flex items-center justify-center border-2 border-[var(--ink-strong)] bg-[var(--accent-red)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isPending ? "Submitting site" : "Submit for review"}
+            {isSubmitting ? "Submitting site" : "Submit for review"}
           </button>
         </div>
 
@@ -184,9 +211,12 @@ export function AuditForm() {
         {error ? (
           <div
             aria-live="polite"
-            className="border-t-2 border-[var(--accent-red)] bg-[var(--accent-red-soft)] px-5 py-3 text-sm font-medium text-[var(--accent-red)]"
+            className="border-t-2 border-[var(--accent-red)] bg-[var(--accent-red-soft)] px-5 py-4"
           >
-            {error}
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
+              Submission issue
+            </p>
+            <p className="mt-2 text-sm font-medium leading-6 text-[var(--accent-red)]">{error}</p>
           </div>
         ) : null}
       </form>
@@ -195,17 +225,37 @@ export function AuditForm() {
         <section
           id="audit-confirmation"
           aria-live="polite"
-          className="border-2 border-[var(--ink-strong)] bg-[var(--surface-strong)]"
+          className="border-2 border-[var(--ink-strong)] bg-[var(--surface-strong)] [box-shadow:8px_8px_0_0_var(--ink-strong)] sm:[box-shadow:12px_12px_0_0_var(--ink-strong)]"
         >
           <div className="border-b-2 border-[var(--ink-strong)] bg-white px-5 py-5">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-              Submission received
+              {hasDegradedDelivery ? "Submission captured" : "Submission received"}
             </p>
             <h2 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.04em] text-[var(--ink-strong)]">
               {result.message}
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">{result.followUp}</p>
           </div>
+
+          {hasDegradedDelivery ? (
+            <div className="border-t-2 border-[var(--accent-red)] bg-[var(--accent-red-soft)] px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-red)]">
+                Backup step recommended
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[var(--ink-strong)]">
+                The audit completed, but our internal routing did not fully confirm. A direct email keeps
+                the lead from getting stuck.
+              </p>
+              {backupContactHref ? (
+                <a
+                  href={backupContactHref}
+                  className="mt-3 inline-flex items-center justify-center border-2 border-[var(--ink-strong)] bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ink-strong)] transition hover:bg-[var(--surface-muted)]"
+                >
+                  Email {result.backupContactEmail}
+                </a>
+              ) : null}
+            </div>
+          ) : null}
         </section>
       ) : null}
     </div>

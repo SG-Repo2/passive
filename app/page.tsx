@@ -77,7 +77,7 @@ export default function Home() {
         </div>
 
         <div className="grid lg:grid-cols-[1.12fr_0.88fr]">
-          <div className="border-b-2 border-[var(--ink-strong)] px-6 py-10 lg:px-10 lg:py-14">
+          <div className="order-2 border-b-2 border-[var(--ink-strong)] px-6 py-8 lg:order-1 lg:px-10 lg:py-14">
             <div className="flex items-center gap-4">
               <span className="h-[2px] flex-1 bg-[var(--ink-strong)]" aria-hidden="true" />
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--ink-strong)]">
@@ -111,8 +111,26 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="border-b-2 border-[var(--ink-strong)] bg-[var(--background)] px-6 py-10 lg:border-b-0 lg:border-l-2 lg:px-8 lg:py-14">
-            <AuditForm />
+          <div className="order-1 border-b-2 border-[var(--ink-strong)] bg-[var(--background)] px-6 py-8 lg:order-2 lg:border-b-0 lg:border-l-2 lg:px-8 lg:py-14">
+            <div className="space-y-6">
+              <div className="border-2 border-[var(--ink-strong)] bg-white px-5 py-5 [box-shadow:8px_8px_0_0_var(--ink-strong)] lg:hidden">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
+                  Chicago Website Audit
+                </p>
+                <h2 className="mt-3 font-heading text-[2.45rem] font-semibold leading-[0.98] tracking-[-0.045em] text-[var(--ink-strong)]">
+                  See what your website is missing before it costs you leads.
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+                  Submit the homepage first. We check visible tracking and search basics, then follow up
+                  by email after review.
+                </p>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-strong)]">
+                  No login. No credit card. No padded language.
+                </p>
+              </div>
+
+              <AuditForm />
+            </div>
           </div>
         </div>
 

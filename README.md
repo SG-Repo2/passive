@@ -73,6 +73,7 @@ Required for the best production setup:
 
 - `OPENAI_API_KEY`: enables AI-enhanced summaries and recommendations
 - `OPENAI_MODEL`: optional override, defaults to `gpt-4.1-mini`
+- `LEAD_NOTIFICATION_EMAIL`: inbox that should receive new audit leads
 - `RESEND_API_KEY`: enables real email delivery
 - `AUDIT_REPORT_FROM_EMAIL`: verified sender identity in Resend, for example `Chi Web Dev <audits@yourdomain.com>`
 - `NEXT_PUBLIC_CONTACT_EMAIL`: used for the CTA mailto link
@@ -80,7 +81,8 @@ Required for the best production setup:
 Fallback behavior:
 
 - If `OPENAI_API_KEY` is missing, the app uses a rules-based explanation and action plan.
-- If `RESEND_API_KEY` or `AUDIT_REPORT_FROM_EMAIL` is missing, the app runs email delivery in mock mode and logs the full report on the server.
+- In local development, if `LEAD_NOTIFICATION_EMAIL`, `RESEND_API_KEY`, or `AUDIT_REPORT_FROM_EMAIL` is missing, the app runs email delivery in mock mode.
+- In production, if internal lead email delivery is degraded, the app keeps the submission accepted, surfaces a backup contact message to the visitor, and logs enough lead detail for manual recovery.
 
 ## Local Setup
 

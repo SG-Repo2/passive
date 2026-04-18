@@ -27,6 +27,7 @@ const ALLOW_HEADER = "POST, OPTIONS";
 
 const SUCCESS_RESPONSE: AuditSubmissionResponse = {
   submitted: true,
+  deliveryState: "confirmed",
   message: "Thanks. Your website has been submitted for review.",
   followUp: "We'll take a look and follow up by email if the site appears reachable.",
 };
@@ -224,19 +225,30 @@ async function parseAuditRequestBody(request: Request, requestId: string): Promi
   }
 }
 
-function buildDeliveryFailureMessage(delivery: AuditDelivery): string {
+function getContactEmail(): string | undefined {
   const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
-  const fallback = "We couldn't submit the site for follow-up right now. Please try again in a few minutes.";
+  return contactEmail || undefined;
+}
 
-  if (delivery.failureReason === "config_missing") {
-    return contactEmail
-      ? `Website review submissions are temporarily unavailable. Please try again later or email ${contactEmail} directly.`
-      : fallback;
-  }
+function buildDeliveryFallbackResponse(delivery: AuditDelivery): AuditSubmissionResponse {
+  const contactEmail = getContactEmail();
+  const fallback =
+    "Our follow-up routing is temporarily unstable. If you do not hear back, please try again later.";
 
-  return contactEmail
-    ? `We couldn't notify the team about your request right now. Please try again in a few minutes or email ${contactEmail} directly.`
-    : fallback;
+  return {
+    submitted: true,
+    deliveryState: "degraded",
+    message: "Your homepage was received, but our follow-up routing needs a backup.",
+    followUp:
+      delivery.failureReason === "config_missing"
+        ? contactEmail
+          ? `The audit completed, but the team inbox is not fully configured right now. Please email ${contactEmail} with your homepage URL so we do not miss your request.`
+          : fallback
+        : contactEmail
+          ? `The audit completed, but the team notification email did not go through. Please email ${contactEmail} with your homepage URL so we do not miss your request.`
+          : fallback,
+    backupContactEmail: contactEmail,
+  };
 }
 
 function successResponse() {
@@ -366,10 +378,7 @@ export async function handleAuditSubmissionRequest(
         providerErrorCode: delivery.providerErrorCode,
       });
 
-      return jsonResponse(
-        { error: buildDeliveryFailureMessage(delivery) },
-        503,
-      );
+      return jsonResponse(buildDeliveryFallbackResponse(delivery), 202);
     }
 
     logAuditEvent("info", "audit_request_completed", {

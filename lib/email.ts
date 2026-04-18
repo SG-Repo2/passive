@@ -38,6 +38,24 @@ function getMissingEmailConfiguration(
   return missing;
 }
 
+function captureLeadRecoveryLog(
+  notification: AuditLeadNotification,
+  options: AuditEmailOptions,
+  details: Record<string, unknown>,
+) {
+  // Preserve enough information to recover the lead if the downstream mailer is unavailable.
+  console.error("[audit][lead_recovery_capture]", {
+    requestId: options.requestId,
+    submittedAt: notification.submittedAt,
+    submittedUrl: notification.submittedUrl,
+    submitterEmail: notification.submitterEmail,
+    finalUrl: notification.findings.finalUrl,
+    httpStatus: notification.findings.httpStatus,
+    summary: notification.findings.summary,
+    ...details,
+  });
+}
+
 export async function sendAuditLeadNotificationEmail(
   notification: AuditLeadNotification,
   options: AuditEmailOptions = {},
@@ -67,6 +85,11 @@ export async function sendAuditLeadNotificationEmail(
         message: buildDeliveryMessage("mock", true, ownerEmail || "local-dev"),
       };
     }
+
+    captureLeadRecoveryLog(notification, options, {
+      failureReason: "config_missing",
+      missingEnv,
+    });
 
     return {
       mode: "mock",
@@ -99,6 +122,11 @@ export async function sendAuditLeadNotificationEmail(
         providerErrorCode: result.error.name,
       });
 
+      captureLeadRecoveryLog(notification, options, {
+        failureReason: "provider_error",
+        providerErrorCode: result.error.name,
+      });
+
       return {
         mode: "resend",
         sent: false,
@@ -128,6 +156,12 @@ export async function sendAuditLeadNotificationEmail(
       submittedUrl: notification.submittedUrl,
       submitterEmail: notification.submitterEmail,
       error,
+    });
+
+    captureLeadRecoveryLog(notification, options, {
+      failureReason: "provider_error",
+      providerErrorCode:
+        error instanceof Error && error.name ? error.name : "unknown_provider_error",
     });
 
     return {

@@ -52,10 +52,14 @@ export interface AuditLeadNotification {
   submittedAt: string;
 }
 
+export type AuditSubmissionDeliveryState = "confirmed" | "degraded";
+
 export interface AuditSubmissionResponse {
   submitted: true;
+  deliveryState: AuditSubmissionDeliveryState;
   message: string;
   followUp: string;
+  backupContactEmail?: string;
 }
 
 export interface AuditErrorResponse {
